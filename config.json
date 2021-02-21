@@ -1,0 +1,7 @@
+{
+  "ticker": "RKDA",
+  "api_root": "https://paper-api.alpaca.markets",
+  "market_api_root": "https://data.alpaca.markets",
+  "bars_timeframe": "1Min",
+  "historic_days": 1
+}
