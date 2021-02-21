@@ -11,7 +11,7 @@ from backtester import backtest
 # tickers = ['RKDA', 'REPH', 'GNCA', 'CERC',
 #            'VIVE', 'QTT', 'TTI', 'SESN', 'PHX', 'MREO']
 
-tickers = ['MREO']
+tickers = ['RKDA']
 
 # How much cash does each test have?
 cash_per_test = 1000
@@ -20,7 +20,7 @@ cash_per_test = 1000
 days_to_test = 14
 
 # How many tests do we run?
-tests_to_run = 200000
+tests_to_run = 400000
 
 
 def main():
@@ -66,12 +66,12 @@ def initialize_test(x):
         'days_to_test': days_to_test,
         'cash': cash_per_test,
         'epoch_interval': random.randint(1, 200),
-        'price_velocity_sell_threshold': random.uniform(0.7, 1),
-        'volume_velocity_sell_threshold': random.uniform(0.7, 1),
-        'price_velocity_buy_threshold': random.uniform(1, 1.5),
-        'volume_velocity_buy_threshold': random.uniform(1, 20),
-        'epoch_velocity_sell_threshold': random.uniform(0.7, 1),
-        'epoch_velocity_buy_threshold': random.uniform(1, 1.2)
+        'price_velocity_sell_threshold': random.uniform(0.5, 1.5),
+        'volume_velocity_sell_threshold': random.uniform(0.5, 1.5),
+        'price_velocity_buy_threshold': random.uniform(0.5, 1.5),
+        'volume_velocity_buy_threshold': random.uniform(0.5, 20),
+        'epoch_velocity_sell_threshold': random.uniform(0.5, 1.5),
+        'epoch_velocity_buy_threshold': random.uniform(0.5, 1.5)
     }
 
     # Spawn the test
