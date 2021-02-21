@@ -34,8 +34,8 @@ def execute(tickers, config):
                             'trades': trades
                         })
 
-        print("Sleeping 60 seconds...")
-        time.sleep(60)
+        print(f"Sleeping {config['backtest_sleep_seconds']} seconds...")
+        time.sleep(config['backtest_sleep_seconds'])
 
     # Find the best config and ticker
     best_config = {

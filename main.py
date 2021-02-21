@@ -20,10 +20,10 @@ def main():
     (ticker, ticker_config) = run_backtests(tickers, config)
 
     # Wait for market to open
-    wait_for_market(config)
+    # wait_for_market(config)
 
     # Set an interval loop, check the ticker price every 60 seconds.
-    daytime_loop(ticker, ticker_config, config)
+    loop(ticker, ticker_config['config'], config)
 
     # Stop executing on sell or market close
     market_close(config)
@@ -34,7 +34,7 @@ def market_close(config):
     pass
 
 
-def daytime_loop(ticker, ticker_config, config):
+def loop(ticker, ticker_config, config):
     daytime_loop.execute(ticker, ticker_config, config)
 
 
