@@ -20,7 +20,7 @@ def main():
     (ticker, ticker_config) = run_backtests(tickers, config)
 
     # Wait for market to open
-    # wait_for_market(config)
+    wait_for_market(config)
 
     # Set an interval loop, check the ticker price every 60 seconds.
     loop(ticker, ticker_config['config'], config)

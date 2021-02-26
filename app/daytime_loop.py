@@ -25,7 +25,7 @@ def execute(ticker, ticker_config, config):
     sold_today = False
     is_order_open = False
     trades = []
-    cash = get_starting_cash(config)
+    cash = get_starting_cash(config) / 2
 
     def buy(price):
         nonlocal cash, is_order_open
@@ -42,7 +42,10 @@ def execute(ticker, ticker_config, config):
             'time_in_force': 'ioc'
         }
         response = requests.post(
-            f"{config['market_api_root']}/v1/orders", json=data, headers=util.alpaca_headers())
+            f"{config['api_root']}/v1/orders", json=data, headers=util.alpaca_headers())
+        print(response)
+        print(response.json())
+        print(response.status_code)
 
         # Update variables
         is_order_open = True
@@ -52,8 +55,11 @@ def execute(ticker, ticker_config, config):
 
         print('Closing positions.')
 
-        requests.delete(
+        response = requests.delete(
             f"{config['api_root']}/v2/positions", headers=util.alpaca_headers())
+        print(response)
+        print(response.json())
+        print(response.status_code)
 
         # Update variables
         is_order_open = False
@@ -78,6 +84,11 @@ def execute(ticker, ticker_config, config):
 
         # Get the latest item
         ticker_item = get_latest_item(ticker, config)
+        if len(ticker_item[ticker]) == 0:
+            print('Skipping, no market items')
+            print(ticker_item)
+            return
+
         item = ticker_item[ticker][-1]
 
         # Check timestamp unique
@@ -104,16 +115,16 @@ def execute(ticker, ticker_config, config):
         # Check sell conditions
         if is_order_open:
             if velocity <= ticker_config['price_velocity_sell_threshold']:
-                sell(ticker, price)
+                sell(price)
             elif volume_velocity <= ticker_config['volume_velocity_sell_threshold']:
-                sell(ticker, price)
+                sell(price)
 
         # Check buy conditions
         if is_order_open == False:
             if velocity >= ticker_config['price_velocity_buy_threshold']:
-                buy(ticker, price)
+                buy(price)
             elif volume_velocity >= ticker_config['volume_velocity_buy_threshold']:
-                buy(ticker, price)
+                buy(price)
 
         # Iterate the epoch
         epoch += 1
@@ -125,25 +136,25 @@ def execute(ticker, ticker_config, config):
             # Check sell conditions
             if is_order_open:
                 if epoch_velocity <= ticker_config['epoch_velocity_sell_threshold']:
-                    sell(ticker, price)
+                    sell(price)
 
             # Check buy conditions
             if is_order_open == False:
                 if epoch_velocity >= ticker_config['epoch_velocity_buy_threshold']:
-                    buy(ticker, price)
+                    buy(price)
 
     tl.start(block=True)
 
 
 def get_latest_item(ticker, config):
-    now = datetime.now() - timedelta(minutes=-1)
+    now = datetime.now() - timedelta(minutes=15)
     t = now.timetuple()
     y, m, d, h, mi, sec, wd, yd, i = t
     h = (h + 6) % 25
     params = {
         'symbols': [ticker],
-        'start': f"{now.isoformat().split('T')[0]}T{h}:{m}:00-00:00",
-        'limit': 1000
+        'start': f"{now.isoformat().split('T')[0]}T{h}:{mi}:00-00:00",
+        'limit': 100
     }
     print(params)
     response = requests.get("https://data.alpaca.markets/v1/bars/minute",
