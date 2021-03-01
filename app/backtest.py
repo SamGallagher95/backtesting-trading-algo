@@ -50,6 +50,9 @@ def execute(tickers, config):
             best_config = best_ticker_config
             best_ticker = ticker
 
+    # Run Iter Learn algorithm
+    (best_config) = iter_learn(config, best_config)
+
     return (best_ticker, best_config)
 
 
@@ -248,3 +251,73 @@ def alpaca_headers():
         'APCA-API-KEY-ID': api_key,
         'APCA-API-SECRET-KEY': secret_key
     }
+
+
+def iter_learn(config, ticker_config_full):
+    base_cash = ticker_config_full['ending_cash']
+    ticker_config = dict(ticker_config_full['config'])
+    print(f'Starting Iterative Learning with base cash: {base_cash}...')
+
+    better_cash = 0
+    num_changes = 0
+
+    with tqdm(total=config["iter_learn_iterations"]) as pbar:
+        for i in range(0, config["iter_learn_iterations"]):
+            # Reseed random
+            random.seed(uuid.uuid4())
+
+            # Get a step value
+            step = random.uniform(
+                config["iter_learn_floor"], config["iter_learn_ceiling"])
+            isNegative = random.randint(1, 100)
+            if isNegative > 50:
+                step = step * -1
+
+            # Run the backtests
+            (new_ticker_config, cash) = back_iteration(
+                config, ticker_config, step, base_cash)
+
+            if cash > base_cash and cash > better_cash:
+                better_cash = cash
+                ticker_config = new_ticker_config
+                num_changes += 1
+
+            pbar.update(1)
+
+    if better_cash != 0 and better_cash != base_cash:
+        print(f'Found better values, made: {better_cash}')
+        print(f'Made {num_changes} changes.')
+
+    ticker_config_full['config'] = dict(ticker_config)
+    return ticker_config_full
+
+
+# Backtest every possible combination of step and find best outcome
+keys = [
+    'price_velocity_sell_threshold',
+    'volume_velocity_sell_threshold',
+    'epoch_velocity_sell_threshold',
+    'price_velocity_buy_threshold',
+    'volume_velocity_buy_threshold',
+    'epoch_velocity_buy_threshold'
+]
+
+
+def back_iteration(config, ticker_config, step, base_cash):
+    rand_map = [
+        random.randint(0, 100),
+        random.randint(0, 100),
+        random.randint(0, 100),
+        random.randint(0, 100),
+        random.randint(0, 100),
+        random.randint(0, 100)
+    ]
+
+    new_ticker_config = dict(ticker_config)
+    for i in range(0, len(rand_map)):
+        if rand_map[i] > 50:
+            new_ticker_config[keys[i]] += step
+
+    (cash, trades) = backtest(new_ticker_config)
+
+    return (new_ticker_config, cash)

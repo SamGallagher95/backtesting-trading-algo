@@ -1,0 +1,4 @@
+ - Update permissions to invoke EC2
+ - Create launch template for EC2
+ - Write Lambda function to start EC2
+ - Write Lambdafunction to end EC2

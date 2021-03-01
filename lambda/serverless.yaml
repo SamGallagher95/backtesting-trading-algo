@@ -1,0 +1,23 @@
+service: daytrader
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  versionFunctions: false
+  region: ${opt:region, 'us-east-1'}
+  tags:
+    createdBy: serverless
+
+functions:
+  start:
+    name: start
+    handler: handlers/start.index
+    timeout: 60
+    events:
+      - schedule:
+          rate: cron(0 13 ? * MON-WED *)
+
+  end:
+    name: end
+    handler: handlers/end.index
+    timeout: 60

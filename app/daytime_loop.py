@@ -1,6 +1,5 @@
 import time
 from datetime import datetime, timedelta
-from timeloop import Timeloop
 import requests
 import math
 from . import util
@@ -9,8 +8,8 @@ from . import util
 def execute(ticker, ticker_config, config):
     print(ticker)
     print(ticker_config)
+
     # Prep time loop
-    tl = Timeloop()
     t = datetime.today()
     market_close = datetime(t.year, t.month, t.day, 16, 0)
 
@@ -26,6 +25,7 @@ def execute(ticker, ticker_config, config):
     is_order_open = False
     trades = []
     cash = get_starting_cash(config) / 2
+    flag = True
 
     def buy(price):
         nonlocal cash, is_order_open
@@ -64,11 +64,9 @@ def execute(ticker, ticker_config, config):
         # Update variables
         is_order_open = False
         sold_today = True
+        flag = False
 
-    @tl.job(interval=timedelta(seconds=60))
-    def tick():
-        nonlocal last_timestamp, market_close, price_map, velocity_map, velocity_epoch_map, volume_map, volume_velocity_map, epoch
-
+    while flag:
         print(f'Tick at {time.ctime()}')
 
         # Check time
@@ -80,7 +78,7 @@ def execute(ticker, ticker_config, config):
         # Check stop conditions
         if sold_today == True:
             print("Already sold today, stopping.")
-            tl.stop()
+            flag = False
 
         # Get the latest item
         ticker_item = get_latest_item(ticker, config)
@@ -143,7 +141,8 @@ def execute(ticker, ticker_config, config):
                 if epoch_velocity >= ticker_config['epoch_velocity_buy_threshold']:
                     buy(price)
 
-    tl.start(block=True)
+        # Sleep for 60 seconds
+        time.sleep(60)
 
 
 def get_latest_item(ticker, config):

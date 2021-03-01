@@ -1,32 +1,47 @@
+import boto3
 import datetime
 from finviz.screener import Screener
 import json
+import os
 import time
 import requests
 from app import util, daytime_loop, backtest
 
 
 def main():
-    # Load config
-    config = load_config()
+    try:
+        # Load config
+        config = load_config()
 
-    # Close open positions
-    close_positions(config)
+        # Push start notification
+        push_start_notification(config)
 
-    # Get stocks from fin viz
-    tickers = get_tickers_from_screener(config)
+        # Close open positions
+        close_positions(config)
 
-    # Run backtests on top 10, find top ticker and config
-    (ticker, ticker_config) = run_backtests(tickers, config)
+        # Get stocks from fin viz
+        tickers = get_tickers_from_screener(config)
 
-    # Wait for market to open
-    wait_for_market(config)
+        # Run backtests on top 10, find top ticker and config
+        (ticker, ticker_config) = run_backtests(tickers, config)
 
-    # Set an interval loop, check the ticker price every 60 seconds.
-    loop(ticker, ticker_config['config'], config)
+        # Wait for market to open
+        wait_for_market(config)
 
-    # Stop executing on sell or market close
-    market_close(config)
+        # Set an interval loop, check the ticker price every 60 seconds.
+        loop(ticker, ticker_config['config'], config)
+
+        # Stop executing on sell or market close
+        market_close(config)
+
+        # Push finished notification
+        push_stop_notification(config)
+
+        kill_self(config)
+    except Exception as e:
+        push_error_notification(config, e)
+
+        kill_self(config)
 
 
 def market_close(config):
@@ -71,10 +86,57 @@ def close_positions(config):
             f"{config['api_root']}/v2/positions/{position['symbol']}", headers=util.alpaca_headers(), params=params)
 
 
+def push_error_notification(config, e):
+    response = requests.post('https://api.pushover.net/1/messages.json', data={
+        "token": config["pushover_token"],
+        "user": config["pushover_user"],
+        "message": f"Daytrader encountered an error and quit. {e}"
+    })
+
+
+def push_stop_notification(config):
+    response = requests.post('https://api.pushover.net/1/messages.json', data={
+        "token": config["pushover_token"],
+        "user": config["pushover_user"],
+        "message": "Daytrader has finished!"
+    })
+
+
+def push_start_notification(config):
+    response = requests.post('https://api.pushover.net/1/messages.json', data={
+        "token": config["pushover_token"],
+        "user": config["pushover_user"],
+        "message": "Daytrader has started!"
+    })
+
+
 def load_config():
+    # Get Alpaca creds
+    client = boto3.client('ssm')
+    api_key_response = client.get_parameter(
+        Name='ALPACA_API_KEY',
+        WithDecryption=True
+    )
+    secret_key_response = client.get_parameter(
+        Name='ALPACA_SECRET_KEY',
+        WithDecryption=True
+    )
+    api_key = api_key_response['Parameter']['Value']
+    secret_key = secret_key_response['Parameter']['Value']
+    os.environ['ALPACA_API_KEY'] = api_key
+    os.environ['ALPACA_SECRET_KEY'] = secret_key
+
+    # Get local config
     with open('config.json', 'r') as f:
         config_str = f.read()
     return json.loads(config_str)
+
+
+def kill_self(config):
+    client = boto3.client('lambda')
+    response = client.invoke(
+        FunctionName=config['kill_self_lambda_name'],
+    )
 
 
 main()
